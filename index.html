@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Coca-Cola | Clientes</title>
+
+<!-- PWA: manifest e íconos -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e30016">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Coca-Cola">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --coca-red:#e30016;
+    --coca-red-dark:#b3000f;
+    --bar-gray:#f2f1ef;
+    --border-gray:#dcdad7;
+    --text-dark:#2b2b2b;
+    --blue-btn:#1f6fb2;
+    --blue-btn-dark:#175a91;
+    --orange:#e8a33d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI", Arial, sans-serif;
+    background:#e9e9e9;
+    color:var(--text-dark);
+  }
+  /* ---- Header ---- */
+  .topbar{
+    background:linear-gradient(180deg, var(--coca-red) 0%, var(--coca-red-dark) 100%);
+    height:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .logo-badge{
+    width:46px;height:46px;border-radius:50%;
+    background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Brush Script MT", cursive;
+    color:var(--coca-red);
+    font-size:20px;
+    font-weight:bold;
+  }
+  .logo-text{
+    font-family:"Brush Script MT", cursive;
+    color:#fff;
+    font-size:34px;
+  }
+  .logo-img{
+    height:66px;
+    width:auto;
+    display:block;
+    border-radius:8px;
+  }
+
+  /* ---- User / region bar ---- */
+  .userbar{
+    background:#fff;
+    border-bottom:1px solid var(--border-gray);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 24px;
+  }
+  .userbar-left{
+    display:flex;align-items:center;gap:8px;
+    font-size:15px;
+  }
+  .userbar-center{
+    font-weight:600;
+    font-size:16px;
+  }
+  .userbar-right{
+    display:flex;gap:10px;
+  }
+  .icon-btn{
+    display:flex;align-items:center;gap:6px;
+    border:1px solid var(--border-gray);
+    background:#f7f7f7;
+    padding:6px 12px;
+    border-radius:3px;
+    font-size:14px;
+    cursor:pointer;
+    color:var(--text-dark);
+  }
+  .cart-icon{
+    flex-shrink:0;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs{
+    background:var(--bar-gray);
+    border-bottom:1px solid var(--border-gray);
+    display:flex;
+    gap:36px;
+    padding:14px 24px;
+  }
+  .tab{
+    font-size:15px;
+    color:var(--text-dark);
+    cursor:pointer;
+    padding-bottom:6px;
+    border-bottom:3px solid transparent;
+  }
+  .tab.active{
+    border-bottom-color:var(--coca-red);
+    font-weight:600;
+  }
+
+  /* ---- Content ---- */
+  .content{
+    background:#fff;
+    margin:0 auto;
+    max-width:1400px;
+    min-height:600px;
+    padding:28px 32px 40px;
+  }
+
+  /* Pedidos: layout con footer fijo y tabla scrolleable */
+  #tab-pedidos{
+    display:flex;
+    flex-direction:column;
+    height:calc(100vh - 176px); /* alto disponible bajo topbar+userbar+tabs */
+    padding:0;
+    overflow:hidden;
+  }
+  .pedidos-scroll{
+    flex:1 1 auto;
+    overflow-y:auto;
+    padding:28px 32px 20px;
+  }
+  .pedidos-footer{
+    flex:0 0 auto;
+    border-top:1px solid var(--border-gray);
+    background:#fff;
+    box-shadow:0 -4px 10px rgba(0,0,0,0.06);
+    padding:10px 32px 12px;
+  }
+  .content-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:20px;
+  }
+  .content-title{
+    font-size:28px;
+    font-weight:400;
+    margin:0;
+  }
+  .toolbar-btns{
+    display:flex;gap:8px;
+  }
+  .sq-btn{
+    width:38px;height:38px;
+    background:var(--blue-btn);
+    border:none;
+    border-radius:3px;
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    font-size:16px;
+  }
+  .sq-btn:hover{background:var(--blue-btn-dark);}
+
+  .results-row{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    color:#555;
+    margin-bottom:14px;
+  }
+  .results-row select{
+    padding:4px 8px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+  }
+
+  .table-area{
+    border-top:1px solid var(--border-gray);
+    padding-top:60px;
+    display:flex;
+    justify-content:center;
+  }
+  .no-items{
+    background:var(--orange);
+    color:#fff;
+    font-weight:600;
+    padding:10px 20px;
+    border-radius:3px;
+    font-size:15px;
+  }
+
+  /* ---- Pedidos footer ---- */
+  .pedidos-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin:0;
+  }
+  .action-btn{
+    background:var(--blue-btn);
+    color:#fff;
+    border:none;
+    padding:6px 12px;
+    border-radius:3px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .action-btn:hover{background:var(--blue-btn-dark);}
+  .action-btn.cancel{background:var(--blue-btn);}
+  .action-btn.cancel-btn{background:var(--coca-red);}
+  .action-btn.cancel-btn:hover{background:var(--coca-red-dark);}
+
+  .summary-row{
+    text-align:center;
+    font-weight:600;
+    font-size:13px;
+    margin:8px 0 6px;
+  }
+  .trucks-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+  }
+  .truck-block{
+    text-align:center;
+    font-size:12px;
+    font-weight:600;
+    color:#333;
+  }
+  .truck-svg{display:block;margin-top:2px;width:150px;height:auto;}
+  .truck-pct{
+    font-size:14px;
+    font-weight:700;
+    margin-top:2px;
+  }
+  .truck-pct.over-limit{color:var(--coca-red);}
+  .truck-detail{
+    font-size:10px;
+    font-weight:400;
+    color:#777;
+  }
+
+  .hidden{display:none !important;}
+
+  /* ---- Import ---- */
+  .import-btn{
+    display:flex;align-items:center;gap:6px;
+    background:#3a9b3a;
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:3px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .import-btn:hover{background:#2f8a2f;}
+  .import-btn.csv-btn{background:#1f6fb2;}
+  .import-btn.csv-btn:hover{background:#175a91;}
+  #xlsx-input{display:none;}
+  #csv-input{display:none;}
+  #stock-input{display:none;}
+  #datos-input{display:none;}
+  .datos-scroll-wrap{
+    overflow-x:auto;
+    max-width:100%;
+  }
+  .datos-table{
+    border-collapse:collapse;
+    font-size:10px;
+    table-layout:fixed;
+  }
+  .datos-table th{
+    background:#2f5fa8;
+    color:#fff;
+    text-align:left;
+    padding:3px 4px;
+    border:1px solid #1f3f73;
+    font-weight:600;
+    font-size:9px;
+    line-height:1.15;
+    white-space:normal;
+    word-break:break-word;
+    width:70px;
+    position:sticky;
+    top:0;
+  }
+  .datos-table td{
+    padding:2px 4px;
+    border:1px solid #c7c7c7;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:90px;
+  }
+  .datos-table tr:nth-child(even) td{
+    background:#f7f9fc;
+  }
+  .datos-table th:nth-child(1), .datos-table td:nth-child(1){ width:55px; max-width:55px; }
+  .datos-table th:nth-child(2), .datos-table td:nth-child(2){ width:100px; max-width:100px; }
+  .datos-table th:nth-child(3), .datos-table td:nth-child(3){ width:100px; max-width:100px; }
+  .datos-table th:nth-child(4), .datos-table td:nth-child(4){ width:80px; max-width:80px; }
+  .datos-table th:nth-child(n+5), .datos-table td:nth-child(n+5){ width:58px; max-width:58px; }
+  .import-status{
+    font-size:13px;
+    color:#555;
+    margin-top:8px;
+  }
+  .manual-add-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-top:10px;
+    padding:10px;
+    background:var(--bar-gray);
+    border:1px solid var(--border-gray);
+    border-radius:4px;
+  }
+  .manual-add-row input{
+    padding:7px 10px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+    font-size:14px;
+  }
+  .manual-add-row input#manual-codigo{
+    width:120px;
+  }
+  .manual-add-row input#manual-descripcion{
+    flex:1;
+  }
+  .prod-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  .prod-table th{
+    background:var(--bar-gray);
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:2px solid var(--border-gray);
+    font-weight:600;
+  }
+  .prod-table td{
+    padding:9px 12px;
+    border-bottom:1px solid var(--border-gray);
+  }
+  .prod-table tr:hover td{background:#fafafa;}
+  .prod-table tr.row-stock-cero td{
+    background:#fff3b0;
+  }
+  .prod-table tr.row-stock-cero:hover td{
+    background:#ffe680;
+  }
+  .prod-table tr.row-stock-cero td.cantidad-readonly .cantidad-box{
+    background:#ffe066;
+  }
+  .prod-table td.qty-col{
+    padding:6px 8px;
+  }
+  .prod-table td.cantidad-readonly{
+    padding:6px 8px;
+  }
+  .prod-table td.cantidad-readonly .cantidad-box{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:64px;
+    height:100%;
+    min-height:24px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+    background:var(--bar-gray);
+    font-weight:700;
+    font-size:13px;
+    color:var(--text-dark);
+  }
+  .prod-table input[type="number"]{
+    width:80px;
+    padding:4px 6px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+  }
+
+  /* ---- Stepper Pallet / Filas / Pack ---- */
+  .qty-stepper{
+    display:flex;
+    align-items:stretch;
+    width:64px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .qty-stepper input{
+    width:38px;
+    border:none;
+    text-align:center;
+    font-size:13px;
+    padding:4px 2px;
+    -moz-appearance:textfield;
+  }
+  .qty-stepper input::-webkit-outer-spin-button,
+  .qty-stepper input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .qty-stepper .qty-arrows{
+    display:flex;
+    flex-direction:column;
+    border-left:1px solid var(--border-gray);
+  }
+  .qty-stepper .qty-arrows button{
+    flex:1;
+    width:22px;
+    border:none;
+    background:var(--bar-gray);
+    cursor:pointer;
+    font-size:9px;
+    line-height:1;
+    padding:0;
+    color:#555;
+  }
+  .qty-stepper .qty-arrows button:first-child{
+    border-bottom:1px solid var(--border-gray);
+  }
+  .qty-stepper .qty-arrows button:hover{
+    background:#e2e2e2;
+  }
+
+  .remove-row{
+    background:none;border:none;color:var(--coca-red);cursor:pointer;font-size:16px;
+  }
+
+  /* ---- Tabla estilo planilla para Historial (como el print de referencia) ---- */
+  .sheet-table{
+    width:-webkit-fit-content;
+    width:-moz-fit-content;
+    width:fit-content;
+    max-width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    table-layout:auto;
+  }
+  .sheet-table th:nth-child(1), .sheet-table td:nth-child(1){
+    white-space:nowrap;
+    padding-right:12px;
+  }
+  .sheet-table th:nth-child(3){
+    white-space:nowrap;
+    padding-left:6px;
+    padding-right:6px;
+  }
+  .sheet-table td:nth-child(3){
+    white-space:nowrap;
+    padding-left:2px;
+    padding-right:4px;
+  }
+  .sheet-table th:nth-child(2), .sheet-table td:nth-child(2){
+    width:auto;
+  }
+  .sheet-table th{
+    background:#2f5fa8;
+    color:#fff;
+    text-transform:uppercase;
+    text-align:center;
+    padding:5px 6px;
+    border:1px solid #1f3f73;
+    font-weight:600;
+    font-size:12px;
+  }
+  .sheet-table td{
+    padding:3px 6px;
+    border:1px solid #c7c7c7;
+    word-wrap:break-word;
+    line-height:1.25;
+  }
+  .sheet-table td:nth-child(1){
+    text-align:center;
+  }
+  .sheet-table td.num{
+    text-align:right;
+  }
+  .sheet-table td .edit-cantidad{
+    width:70px;
+    text-align:right;
+    padding:2px 4px;
+    border:1px solid #9fb8dd;
+    border-radius:4px;
+    font-size:13px;
+  }
+  .sheet-table td .edit-delete{
+    background:none;
+    border:none;
+    color:var(--coca-red);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    padding:0 4px;
+  }
+  .sheet-table th.edit-col, .sheet-table td.edit-col{
+    width:32px;
+    text-align:center;
+  }
+  .agregar-producto-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin-top:10px;
+    padding:10px;
+    background:#f2f6fb;
+    border:1px dashed #9fb8dd;
+    border-radius:6px;
+  }
+  .agregar-producto-row input[type="text"]{
+    flex:1;
+    min-width:180px;
+    padding:6px 8px;
+    border:1px solid #c7c7c7;
+    border-radius:4px;
+  }
+  .agregar-producto-row input[type="number"]{
+    width:90px;
+    padding:6px 8px;
+    border:1px solid #c7c7c7;
+    border-radius:4px;
+  }
+  .agregar-producto-sugerencias{
+    position:relative;
+    flex:1;
+    min-width:180px;
+  }
+  .agregar-producto-lista{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    background:#fff;
+    border:1px solid #c7c7c7;
+    border-top:none;
+    max-height:180px;
+    overflow-y:auto;
+    z-index:20;
+    box-shadow:0 4px 8px rgba(0,0,0,.1);
+  }
+  .agregar-producto-lista div{
+    padding:6px 8px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .agregar-producto-lista div:hover{
+    background:#eaf1fb;
+  }
+  .edit-actions-row{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    margin-top:10px;
+  }
+  .sheet-total-row{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    padding:12px 4px 0;
+    font-weight:600;
+    font-size:14px;
+  }
+
+  /* ---- Modal "Resumen del pedido" (carrito) ---- */
+  .carrito-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center;
+    z-index:200;
+    padding:20px;
+  }
+  .carrito-overlay.hidden{ display:none; }
+  .carrito-modal{
+    background:#fff;
+    width:100%;
+    max-width:900px;
+    max-height:88vh;
+    display:flex;
+    flex-direction:column;
+    border-radius:4px;
+    overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,0.3);
+  }
+  .carrito-modal-header{
+    background:linear-gradient(180deg, var(--coca-red) 0%, var(--coca-red-dark) 100%);
+    color:#fff;
+    padding:14px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:18px;
+    font-weight:700;
+  }
+  .carrito-modal-header button{
+    background:none; border:none; color:#fff; font-size:20px; cursor:pointer; line-height:1;
+  }
+  .carrito-modal-header-btns{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .carrito-modal-body{
+    padding:18px 20px;
+    overflow-y:auto;
+  }
+  .carrito-modal-body h2{
+    margin:0 0 16px;
+    font-size:22px;
+    font-weight:600;
+    color:#333;
+  }
+  .carrito-vacio{
+    padding:30px 0;
+    text-align:center;
+    color:#777;
+  }
+
+  /* ---- Encabezado "Detalle de Carga" (como el remito real) ---- */
+  .carga-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+    padding:6px 4px 18px;
+    border-bottom:2px solid var(--border-gray);
+    margin-bottom:16px;
+  }
+  .carga-badge{
+    background:#1a1a1a;
+    color:#fff;
+    font-weight:700;
+    font-size:16px;
+    padding:8px 18px;
+    border-radius:2px;
+    letter-spacing:1px;
+  }
+  .carga-titulo{
+    font-size:26px;
+    font-weight:800;
+    color:#1f5fa8;
+    letter-spacing:0.5px;
+    text-align:right;
+  }
+  .carga-datos{
+    font-size:13px;
+    line-height:1.6;
+    color:var(--text-dark);
+  }
+  .carga-datos .razon-social{
+    font-weight:700;
+    font-size:14px;
+  }
+
+  /* ---- Historial: lista de carpetas (pedidos guardados) ---- */
+  .folder-list{
+    border-top:1px solid var(--border-gray);
+  }
+  .folder-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 8px;
+    border-bottom:1px solid var(--border-gray);
+    cursor:pointer;
+  }
+  .folder-row:hover{
+    background:#f7f9fc;
+  }
+  .folder-icon{
+    font-size:20px;
+  }
+  .folder-name{
+    flex:1;
+    font-size:15px;
+    font-weight:600;
+    color:var(--text-dark);
+  }
+  .folder-meta{
+    font-size:13px;
+    color:#777;
+  }
+  .folder-delete{
+    background:none;
+    border:none;
+    color:var(--coca-red);
+    cursor:pointer;
+    font-size:15px;
+    padding:4px 6px;
+  }
+  .folder-check{
+    width:18px;
+    height:18px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  /* ---- Historial: email destino para envíos ---- */
+  .email-config-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+    padding:10px;
+    background:var(--bar-gray);
+    border:1px solid var(--border-gray);
+    border-radius:4px;
+    font-size:13px;
+  }
+  .email-config-row input{
+    flex:1;
+    max-width:320px;
+    padding:6px 10px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+    font-size:14px;
+  }
+
+  /* ---- Historial: configuración opcional de EmailJS (envío con adjunto) ---- */
+  .emailjs-config{
+    margin-top:8px;
+    padding:8px 10px;
+    background:#fafafa;
+    border:1px solid var(--border-gray);
+    border-radius:4px;
+    font-size:13px;
+  }
+  .emailjs-config summary{
+    cursor:pointer;
+    font-weight:600;
+    color:var(--text-dark);
+  }
+  .emailjs-config-body{
+    margin-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-width:420px;
+  }
+  .emailjs-help{
+    color:#555;
+    line-height:1.4;
+    margin:0 0 4px;
+  }
+  .emailjs-help a{color:var(--blue-btn);}
+  .emailjs-config-body label{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    font-weight:600;
+    font-size:12px;
+    color:#555;
+  }
+  .emailjs-config-body input{
+    padding:6px 10px;
+    border:1px solid var(--border-gray);
+    border-radius:3px;
+    font-size:13px;
+    font-weight:400;
+    color:var(--text-dark);
+  }
+
+  /* Formulario/iframe ocultos para el envío por FormSubmit — fuera de pantalla, no display:none
+     (para que el input file funcione bien en todos los navegadores) */
+  .formsubmit-hidden-frame{
+    position:absolute;
+    width:1px;
+    height:1px;
+    left:-9999px;
+    top:-9999px;
+    border:0;
+    overflow:hidden;
+  }
+
+  /* ---- Impresión: solo la tabla de Historial ---- */
+  @page{
+    size: A4;
+    margin: 10mm;
+  }
+  @media print{
+    .topbar, .userbar, .tabs, .toolbar-btns, .results-row, .import-status, .pedidos-footer,
+    .content-title, .sheet-total-row, .email-config-row, .emailjs-config{
+      display:none !important;
+    }
+    body{ background:#fff; }
+    .content{
+      min-height:0;
+      padding:0;
+      max-width:100%;
+    }
+    .sheet-table{
+      page-break-inside:auto;
+      margin:0 auto;
+    }
+    .sheet-table tr{
+      page-break-inside:avoid;
+    }
+    .sheet-table th{
+      font-size:12px;
+    }
+    .sheet-table td{
+      font-size:12px;
+    }
+    .sheet-table th:nth-child(1), .sheet-table td:nth-child(1){
+      padding-right:calc(12px + 1.5cm) !important;
+    }
+    .sheet-table th:nth-child(3){
+      padding-left:calc(6px + 0.75cm) !important;
+      padding-right:calc(6px + 0.75cm) !important;
+    }
+    .sheet-table td:nth-child(3){
+      padding-left:calc(2px + 0.75cm) !important;
+      padding-right:calc(4px + 0.75cm) !important;
+    }
+    .sheet-table th:nth-child(2), .sheet-table td:nth-child(2){
+      padding-left:calc(6px + 0.75cm) !important;
+      padding-right:calc(6px + 1.5cm) !important;
+    }
+    /* Al imprimir el carrito, se oculta todo lo demás y el modal pasa a ocupar la hoja normalmente */
+    body.printing-carrito .topbar, body.printing-carrito .userbar, body.printing-carrito .tabs,
+    body.printing-carrito .content{
+      display:none !important;
+    }
+    body.printing-carrito .carrito-overlay{
+      position:static !important;
+      background:none !important;
+      padding:0 !important;
+      display:block !important;
+    }
+    body.printing-carrito .carrito-modal{
+      max-width:100%;
+      max-height:none;
+      box-shadow:none;
+      border-radius:0;
+    }
+    body.printing-carrito .carrito-modal-header-btns{
+      display:none !important;
+    }
+  }
+</style>
+
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo">
+      <img class="logo-img" src="data:image/jpeg;base64,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" alt="Logo">
+    </div>
+  </div>
+
+  <div class="userbar">
+    <div class="userbar-left">👤 <span>deanfunes Clientes</span></div>
+    <div class="userbar-center">Stock de Región : Norte</div>
+    <div class="userbar-right">
+      <div class="icon-btn" id="icon-carrito">
+        <svg class="cart-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span id="carrito-count">0</span>
+      </div>
+      <div class="icon-btn">🏠 Inicio</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab" data-tab="historial">Historial</div>
+    <div class="tab" data-tab="pedidos">Pedidos</div>
+    <div class="tab active" data-tab="stock">Stock Cliente</div>
+    <div class="tab" data-tab="datos">Datos</div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="content hidden" id="tab-historial">
+    <div class="content-header">
+      <h1 class="content-title" id="historial-title">Historial</h1>
+      <div class="toolbar-btns">
+        <button class="action-btn hidden" id="btn-volver-historial">← Volver</button>
+        <button class="action-btn hidden" id="btn-editar-historial">✎ Editar</button>
+        <button class="action-btn hidden" id="btn-imprimir-historial">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:4px;">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>Imprimir
+        </button>
+        <button class="action-btn hidden" id="btn-mail-historial">📧 Enviar por Mail</button>
+        <button class="action-btn hidden" id="btn-descargar-historial">⬇ Descargar Excel</button>
+      </div>
+    </div>
+    <div class="email-config-row" id="email-config-row">
+      <label for="email-destino">Email para enviar pedidos:</label>
+      <input type="email" id="email-destino" placeholder="ejemplo@dominio.com">
+    </div>
+    <details class="emailjs-config">
+      <summary>ℹ Cómo funciona el envío por mail (gratis, sin cuenta paga)</summary>
+      <div class="emailjs-config-body">
+        <p class="emailjs-help">
+          El pedido se manda con el <strong>Excel adjunto de verdad</strong> usando
+          <a href="https://formsubmit.co" target="_blank" rel="noopener">FormSubmit.co</a>, un servicio gratuito que no
+          pide cuenta ni clave. Lo único que tenés que hacer es esto:
+        </p>
+        <p class="emailjs-help">
+          <strong>La primera vez</strong> que uses un email destino nuevo, FormSubmit te va a mandar un correo pidiendo que
+          confirmes haciendo clic en un link — abrilo y confirmá. Después de eso, todos los pedidos que mandes a ese mismo
+          email llegan directo, con el Excel adjunto, sin pedir nada más.
+        </p>
+      </div>
+    </details>
+    <details class="emailjs-config">
+      <summary>⚙ Datos para el encabezado del "Detalle de Carga"</summary>
+      <div class="emailjs-config-body">
+        <p class="emailjs-help">
+          Estos datos aparecen arriba de cada pedido guardado (como en el "Detalle de Carga" de tus remitos). Se completan
+          una sola vez y quedan guardados.
+        </p>
+        <label>Razón Social <input type="text" id="carga-razon-social" placeholder="DEAN FUNES REFRESCOS S.R.E"></label>
+        <label>Contacto <input type="text" id="carga-contacto" placeholder="JORGE ELIAS"></label>
+        <label>Localidad <input type="text" id="carga-localidad" placeholder="DEAN FUNES"></label>
+        <label>Teléfono <input type="text" id="carga-telefono" placeholder="03521-15406906"></label>
+        <label>N° de Carga (fijo, no cambia) <input type="text" id="carga-numero" placeholder="500000053" inputmode="numeric"></label>
+      </div>
+    </details>
+    <div class="results-row">
+      Mostrar <select><option>50</option></select> / <span id="historial-count">0</span> resultado(s)
+    </div>
+    <div class="table-area" id="historial-table-area">
+      <div class="no-items">No existen items</div>
+    </div>
+
+    <!-- Formulario oculto usado para mandar el pedido con el Excel adjunto vía FormSubmit.co (gratis) -->
+    <iframe name="formsubmit-target-frame" class="formsubmit-hidden-frame"></iframe>
+    <form id="formsubmit-form" class="formsubmit-hidden-frame" method="POST" enctype="multipart/form-data" target="formsubmit-target-frame">
+      <input type="hidden" name="_subject" id="formsubmit-subject">
+      <input type="hidden" name="_template" value="box">
+      <input type="hidden" name="_captcha" value="false">
+      <textarea name="message" id="formsubmit-message"></textarea>
+      <input type="file" name="attachment" id="formsubmit-file">
+    </form>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div class="content hidden" id="tab-pedidos">
+    <div class="pedidos-scroll">
+      <div class="content-header">
+        <h1 class="content-title">Pedidos</h1>
+        <div class="toolbar-btns">
+          <label class="import-btn csv-btn" for="csv-input">⬆ Importar</label>
+          <input type="file" id="csv-input" accept=".xlsm,.xlsx,.xls">
+        </div>
+      </div>
+      <div class="import-status" id="import-status"></div>
+      <div class="manual-add-row">
+        <input type="text" id="manual-codigo" placeholder="Código">
+        <input type="text" id="manual-descripcion" placeholder="Descripción">
+        <button class="action-btn" id="btn-agregar-manual">+ Agregar</button>
+        <button class="action-btn" id="btn-guardar-pedido">💾 Guardar</button>
+      </div>
+      <div class="results-row">
+        Mostrar <select id="pedidos-mostrar">
+          <option value="todos" selected>Todos</option>
+        </select> / <span id="pedidos-count">0</span> resultado(s)
+      </div>
+      <div class="table-area" id="pedidos-table-area">
+        <div class="no-items">No existen items</div>
+      </div>
+    </div>
+    <div class="pedidos-footer">
+      <div class="summary-row">Pallets: <span id="resumen-pallets">0</span> &nbsp;|&nbsp; Cajas: <span id="resumen-cajas">0</span> &nbsp;|&nbsp; Total Kg: <span id="resumen-kg">0</span></div>
+      <div class="trucks-row">
+        <div class="truck-block">
+          Pallet Máximo
+          <svg class="truck-svg" width="220" height="90" viewBox="0 0 420 130">
+            <ellipse cx="210" cy="118" rx="200" ry="4" fill="#00000022"/>
+            <rect x="170" y="22" width="238" height="62" fill="#fff" stroke="#c00016" stroke-width="3"/>
+            <rect id="fill-picking" x="170" y="22" width="0" height="62" fill="#2f9e44"/>
+            <rect x="170" y="22" width="238" height="62" fill="none" stroke="#c00016" stroke-width="3"/>
+            <rect x="170" y="22" width="238" height="6" fill="#b0b6bb"/>
+            <rect x="170" y="78" width="238" height="6" fill="#b0b6bb"/>
+            <rect x="192" y="84" width="4" height="16" fill="#333"/>
+            <rect x="204" y="84" width="4" height="16" fill="#333"/>
+            <rect x="6" y="58" width="10" height="30" rx="2" fill="#c9ccce" stroke="#8a8d8f" stroke-width="1"/>
+            <path d="M16,88 L16,66 L58,60 L58,88 Z" fill="#c00016"/>
+            <path d="M58,88 L58,60 L74,28 L152,24 L152,88 Z" fill="#c00016"/>
+            <path d="M62,58 L76,33 L96,31 L92,58 Z" fill="#2b2f33"/>
+            <rect x="100" y="34" width="26" height="26" rx="2" fill="#2b2f33"/>
+            <rect x="58" y="70" width="94" height="3" fill="#8a1420"/>
+            <rect x="152" y="80" width="18" height="6" fill="#333"/>
+            <circle cx="36" cy="100" r="15" fill="#222"/>
+            <circle cx="36" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="120" cy="100" r="15" fill="#222"/>
+            <circle cx="120" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="146" cy="100" r="15" fill="#222"/>
+            <circle cx="146" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="378" cy="100" r="15" fill="#222"/>
+            <circle cx="378" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="402" cy="100" r="15" fill="#222"/>
+            <circle cx="402" cy="100" r="6" fill="#9a9ea1"/>
+          </svg>
+          <div class="truck-pct" id="pct-picking">0%</div>
+          <div class="truck-detail" id="detalle-picking">0 / 30 pallets</div>
+        </div>
+        <div class="truck-block">
+          Peso Máximo
+          <svg class="truck-svg" width="220" height="90" viewBox="0 0 420 130">
+            <ellipse cx="210" cy="118" rx="200" ry="4" fill="#00000022"/>
+            <rect x="170" y="22" width="238" height="62" fill="#fff" stroke="#c00016" stroke-width="3"/>
+            <rect id="fill-peso" x="170" y="22" width="0" height="62" fill="#2f9e44"/>
+            <rect x="170" y="22" width="238" height="62" fill="none" stroke="#c00016" stroke-width="3"/>
+            <rect x="170" y="22" width="238" height="6" fill="#b0b6bb"/>
+            <rect x="170" y="78" width="238" height="6" fill="#b0b6bb"/>
+            <rect x="192" y="84" width="4" height="16" fill="#333"/>
+            <rect x="204" y="84" width="4" height="16" fill="#333"/>
+            <rect x="6" y="58" width="10" height="30" rx="2" fill="#c9ccce" stroke="#8a8d8f" stroke-width="1"/>
+            <path d="M16,88 L16,66 L58,60 L58,88 Z" fill="#c00016"/>
+            <path d="M58,88 L58,60 L74,28 L152,24 L152,88 Z" fill="#c00016"/>
+            <path d="M62,58 L76,33 L96,31 L92,58 Z" fill="#2b2f33"/>
+            <rect x="100" y="34" width="26" height="26" rx="2" fill="#2b2f33"/>
+            <rect x="58" y="70" width="94" height="3" fill="#8a1420"/>
+            <rect x="152" y="80" width="18" height="6" fill="#333"/>
+            <circle cx="36" cy="100" r="15" fill="#222"/>
+            <circle cx="36" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="120" cy="100" r="15" fill="#222"/>
+            <circle cx="120" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="146" cy="100" r="15" fill="#222"/>
+            <circle cx="146" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="378" cy="100" r="15" fill="#222"/>
+            <circle cx="378" cy="100" r="6" fill="#9a9ea1"/>
+            <circle cx="402" cy="100" r="15" fill="#222"/>
+            <circle cx="402" cy="100" r="6" fill="#9a9ea1"/>
+          </svg>
+          <div class="truck-pct" id="pct-peso">0%</div>
+          <div class="truck-detail" id="detalle-peso">0 / 30.000 kg</div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- STOCK CLIENTE -->
+  <div class="content" id="tab-stock">
+    <div class="content-header">
+      <h1 class="content-title">Stock Cliente</h1>
+      <div class="toolbar-btns">
+        <label class="import-btn" for="stock-input">⬆ Importar Stock</label>
+        <input type="file" id="stock-input" accept=".xlsx,.xls,.xlsm">
+        <button class="action-btn cancel-btn" id="btn-limpiar-stock">🗑 Limpiar Hoja</button>
+      </div>
+    </div>
+    <div class="import-status" id="stock-import-status"></div>
+    <div class="table-area" id="stock-table-area">
+      <div class="no-items">No existen items</div>
+    </div>
+  </div>
+
+  <!-- DATOS (importación cruda de xlsm, columnas A-D y F-R) -->
+  <div class="content hidden" id="tab-datos">
+    <div class="content-header">
+      <h1 class="content-title">Datos</h1>
+      <div class="toolbar-btns">
+        <label class="import-btn" for="datos-input">⬆ Importar xlsm</label>
+        <input type="file" id="datos-input" accept=".xlsm,.xlsx,.xls">
+        <button class="action-btn cancel-btn" id="btn-limpiar-datos">🗑 Limpiar Hoja</button>
+      </div>
+    </div>
+    <div class="import-status" id="datos-import-status"></div>
+    <div class="datos-scroll-wrap" id="datos-table-area">
+      <div class="no-items">No existen items</div>
+    </div>
+  </div>
+
+  <!-- Modal "Resumen del pedido" (carrito), se abre desde el ícono 🛒 de arriba -->
+  <div class="carrito-overlay hidden" id="carrito-overlay">
+    <div class="carrito-modal">
+      <div class="carrito-modal-header">
+        <span>Resumen del pedido</span>
+        <div class="carrito-modal-header-btns">
+          <button type="button" id="carrito-imprimir" aria-label="Imprimir" title="Imprimir">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+          </button>
+          <button type="button" id="carrito-cerrar" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
+      <div class="carrito-modal-body">
+        <h2>Resumen del pedido</h2>
+        <div id="carrito-contenido"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'stockdfr_pedidos_productos';
+
+    const csvInput = document.getElementById('csv-input');
+    const tableArea = document.getElementById('pedidos-table-area');
+    const importStatus = document.getElementById('import-status');
+    const pedidosCount = document.getElementById('pedidos-count');
+
+    // Lista única de productos, persistida en el navegador
+    let productos = [];
+
+    // Datos (solapa "Datos" / hoja M M) — declarada acá arriba para que esté disponible
+    // desde el primer renderTable() de Pedidos (que la usa para calcular Cantidad y Pallets)
+    let datos = { headers: [], rows: [] };
+    const STORAGE_KEY_DATOS = 'stockdfr_datos_extra';
+
+    function loadDatos(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY_DATOS);
+        datos = raw ? JSON.parse(raw) : { headers: [], rows: [] };
+      }catch(err){
+        datos = { headers: [], rows: [] };
+      }
+    }
+
+    // Stock Cliente — declarada acá arriba también, para que Pedidos pueda marcar
+    // en amarillo los códigos que en Stock Cliente figuran con cantidad en cero
+    let stock = [];
+    const STORAGE_KEY_STOCK = 'stockdfr_stock_cliente';
+
+    function loadStock(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY_STOCK);
+        stock = raw ? JSON.parse(raw) : [];
+      }catch(err){
+        stock = [];
+      }
+    }
+
+    function loadProductos(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        productos = raw ? JSON.parse(raw) : [];
+      }catch(err){
+        productos = [];
+      }
+    }
+
+    function saveProductos(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+      }catch(err){
+        console.error('No se pudo guardar en el navegador:', err);
+      }
+    }
+
+    // Como '??' (nullish coalescing), pero compatible con navegadores más viejos:
+    // devuelve el valor salvo que sea null o undefined, en cuyo caso devuelve el reemplazo
+    function nvl(valor, reemplazo){
+      return (valor === null || valor === undefined) ? reemplazo : valor;
+    }
+
+    function normCodigo(c){
+      return nvl(c, '').toString().trim();
+    }
+
+    // Completa códigos cortos a 6 dígitos: 3 dígitos -> antepone "100", 4 dígitos -> antepone "10", etc.
+    // Ej: 116 -> 100116 · 2018 -> 102018 · 100103 (ya de 6) -> queda igual
+    function normalizarCodigo6(codigo){
+      const cod = normCodigo(codigo);
+      if(!/^\d+$/.test(cod)) return cod; // si no es solo números, se deja como está
+      if(cod.length >= 6 || cod.length === 0) return cod;
+      const zerosNeeded = 6 - cod.length - 1;
+      const prefix = '1' + '0'.repeat(Math.max(0, zerosNeeded));
+      return prefix + cod;
+    }
+
+    // Agrega solo los productos cuyo código todavía no está guardado
+    function mergeProductos(newRows){
+      const existing = new Set(productos.map(p => normCodigo(p.codigo)));
+      let added = 0;
+      newRows.forEach(r => {
+        const cod = normalizarCodigo6(r.codigo);
+        if(cod && !existing.has(cod)){
+          productos.push({ codigo: cod, descripcion: r.descripcion || '', pallet: '', filas: '', pack: '', cantidad: '' });
+          existing.add(cod);
+          added++;
+        }
+      });
+      productos.sort((a, b) => (parseFloat(a.codigo) || 0) - (parseFloat(b.codigo) || 0));
+      saveProductos();
+      return added;
+    }
+
+    // ---- Funciones para ubicar la hoja "M M" y su fila de encabezado (las usa la solapa Datos) ----
+    function findSheet(workbook){
+      const target = workbook.SheetNames.find(n => n.trim().toLowerCase() === 'm m');
+      return target || workbook.SheetNames[0];
+    }
+
+    function findHeaderRow(matrix){
+      for(let i = 0; i < matrix.length; i++){
+        const cellA = (matrix[i][0] || '').toString().trim().toLowerCase();
+        if(cellA === 'cód.' || cellA === 'cod.' || cellA === 'codigo' || cellA === 'código'){
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    // ---- Importar Cód. (Código / Descripción) ----
+    function looksLikeCodeHeader(cell0, cell1){
+      const c0 = (cell0 || '').toString().trim().toLowerCase();
+      const c1 = (cell1 || '').toString().trim().toLowerCase();
+      return ['codigo', 'código', 'codigos', 'códigos', 'cod', 'cód.', 'sku'].includes(c0) ||
+             ['descripcion', 'descripción', 'producto', 'articulo', 'artículo'].includes(c1);
+    }
+
+    function findCodeSheet(workbook){
+      for(const name of workbook.SheetNames){
+        const sheet = workbook.Sheets[name];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        for(let i = 0; i < Math.min(rows.length, 15); i++){
+          if(looksLikeCodeHeader(rows[i][0], rows[i][1])){
+            return { name, rows, headerRowIdx: i };
+          }
+        }
+      }
+      const firstName = workbook.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstName], { header: 1, defval: '' });
+      return { name: firstName, rows, headerRowIdx: -1 };
+    }
+
+    csvInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try{
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const { name: sheetName, rows, headerRowIdx } = findCodeSheet(workbook);
+
+          const dataStart = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+
+          const dataRows = rows.slice(dataStart)
+            .filter(r => nvl(r[0], '').toString().trim() !== '')
+            .map(r => ({
+              codigo: nvl(r[0], '').toString().trim(),
+              descripcion: nvl(r[1], '').toString().trim()
+            }));
+
+          if(dataRows.length === 0){
+            importStatus.textContent = 'No se encontraron códigos en el archivo.';
+            return;
+          }
+
+          const added = mergeProductos(dataRows);
+          renderTable();
+          importStatus.textContent = `"${file.name}" (hoja "${sheetName}"): ${added} código(s) nuevo(s) agregado(s) — total guardado: ${productos.length}.`;
+        }catch(err){
+          importStatus.textContent = 'No se pudo leer el archivo. Verificá que sea un .xlsm/.xlsx válido.';
+          console.error(err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // ---- Stepper Pallet / Filas / Pack ----
+    // Busca en la solapa "Datos" (hoja M M) el Pack x Pallet y Pack x pisos de un código
+    function obtenerDatosProducto(codigo){
+      if(!datos || !datos.rows || datos.rows.length === 0) return null;
+      const idxPackXPallet = datos.headers.findIndex(h => (h || '').toString().trim().toLowerCase() === 'pack x pallet');
+      const idxPackXPisos = datos.headers.findIndex(h => (h || '').toString().trim().toLowerCase() === 'pack x pisos');
+      const idxPisoXPall = datos.headers.findIndex(h => (h || '').toString().trim().toLowerCase() === 'piso x pall');
+      const idxPesoXPal = datos.headers.findIndex(h => (h || '').toString().trim().toLowerCase() === 'peso x pal');
+      const idxPesoXPack = datos.headers.findIndex(h => (h || '').toString().trim().toLowerCase() === 'peso x pack');
+      const fila = datos.rows.find(r => (r[0] || '').toString().trim() === (codigo || '').toString().trim());
+      if(!fila) return null;
+      return {
+        packXPallet: idxPackXPallet !== -1 ? (parseFloat(fila[idxPackXPallet]) || 0) : 0,
+        packXPisos: idxPackXPisos !== -1 ? (parseFloat(fila[idxPackXPisos]) || 0) : 0,
+        pisoXPall: idxPisoXPall !== -1 ? (parseFloat(fila[idxPisoXPall]) || 0) : 0,
+        pesoXPal: idxPesoXPal !== -1 ? (parseFloat(fila[idxPesoXPal]) || 0) : 0,
+        pesoXPack: idxPesoXPack !== -1 ? (parseFloat(fila[idxPesoXPack]) || 0) : 0
+      };
+    }
+
+    // Recalcula Cantidad = Pallet×(Pack x Pallet) + Filas×(Pack x pisos) + Pack, usando datos de la solapa Datos
+    function recalcularCantidad(row){
+      const info = obtenerDatosProducto(row.codigo);
+      if(!info) return false;
+      const pallet = parseFloat(row.pallet) || 0;
+      const filas = parseFloat(row.filas) || 0;
+      const pack = parseFloat(row.pack) || 0;
+      const total = pallet * info.packXPallet + filas * info.packXPisos + pack;
+      row.cantidad = total > 0 ? String(total) : '';
+      return true;
+    }
+
+    // Pallets = suma de Pallet cargado directo
+    //         + 1 pallet por cada "Piso x Pall" Filas, SUMANDO las filas de distintos códigos
+    //           que compartan el mismo Piso x Pall (para completar el pallet entre varios productos)
+    //         + lo que sobra de cada grupo (filas sueltas que no llegaron a completar su pallet) se
+    //           junta entre TODOS los grupos, y cada 5 filas sueltas de códigos distintos arman
+    //           un pallet mixto extra
+    // Cajas = suma del Total Cajas de cada fila (Pallet×Pack x Pallet + Filas×Pack x pisos + Pack)
+    // Peso total (Kg) = Pallet×(Peso x Pal) + (Filas/Piso x Pall)×(Peso x Pal) + Pack×(Peso x Pack), según Datos
+    const LIMITE_PALLETS_CAMION = 30;
+    const LIMITE_KG_CAMION = 30000;
+
+    function actualizarResumenPedido(){
+      let totalPalletsDirectos = 0;
+      let totalCajas = 0;
+      let totalKg = 0;
+      const filasPorGrupo = {}; // clave: Piso x Pall · valor: suma de Filas de todos los códigos con ese Piso x Pall
+
+      productos.forEach(row => {
+        const pallet = parseFloat(row.pallet) || 0;
+        const filas = parseFloat(row.filas) || 0;
+        const pack = parseFloat(row.pack) || 0;
+
+        totalPalletsDirectos += pallet;
+        totalCajas += parseFloat(row.cantidad) || 0;
+
+        const info = obtenerDatosProducto(row.codigo);
+        const pisoXPall = info && info.pisoXPall > 0 ? info.pisoXPall : 5; // si no hay dato en Datos, usa 5 como respaldo
+
+        if(info){
+          totalKg += pallet * info.pesoXPal
+                   + (pisoXPall > 0 ? (filas / pisoXPall) * info.pesoXPal : 0)
+                   + pack * info.pesoXPack;
+        }
+
+        if(filas > 0){
+          filasPorGrupo[pisoXPall] = (filasPorGrupo[pisoXPall] || 0) + filas;
+        }
+      });
+
+      // Fracción de pallet por las Filas cargadas: no se redondea para abajo, así se puede ver
+      // el avance real (ej: 1,3 · 1,5 · 1,9 pallet) a medida que se van sumando filas sueltas
+      let totalPalletsPorFilas = 0;
+      Object.keys(filasPorGrupo).forEach(pisoXPall => {
+        const sumaGrupo = filasPorGrupo[pisoXPall];
+        const divisor = parseFloat(pisoXPall);
+        totalPalletsPorFilas += divisor > 0 ? sumaGrupo / divisor : 0;
+      });
+
+      const totalPallets = totalPalletsDirectos + totalPalletsPorFilas;
+      const totalPalletsTexto = totalPallets.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const totalKgRedondeado = Math.round(totalKg);
+
+      const elPallets = document.getElementById('resumen-pallets');
+      const elCajas = document.getElementById('resumen-cajas');
+      const elKg = document.getElementById('resumen-kg');
+      if(elPallets) elPallets.textContent = totalPalletsTexto;
+      if(elCajas) elCajas.textContent = totalCajas;
+      if(elKg) elKg.textContent = totalKgRedondeado.toLocaleString('es-AR');
+
+      actualizarCamion('picking', totalPallets, LIMITE_PALLETS_CAMION, `${totalPalletsTexto} / ${LIMITE_PALLETS_CAMION} pallets`);
+      actualizarCamion('peso', totalKgRedondeado, LIMITE_KG_CAMION, `${totalKgRedondeado.toLocaleString('es-AR')} / ${LIMITE_KG_CAMION.toLocaleString('es-AR')} kg`);
+      actualizarBadgeCarrito();
+    }
+
+    // Cuenta cuántos productos tienen alguna cantidad cargada y lo muestra en el ícono del carrito de arriba
+    function actualizarBadgeCarrito(){
+      const badge = document.getElementById('carrito-count');
+      if(badge) badge.textContent = productos.filter(tieneCantidad).length;
+    }
+
+    // Calcula Pallets/Productos/Kg totales de un pedido guardado en Historial, usando los datos
+    // de la solapa Datos (Pack x Pallet, Peso x Pack) a partir de la cantidad total de cada ítem
+    function calcularTotalesPedido(pedido){
+      let totalPallets = 0;
+      let totalKg = 0;
+
+      pedido.items.forEach(item => {
+        const cantidad = parseFloat(item.cantidad) || 0;
+        const info = obtenerDatosProducto(item.codigo);
+        if(info){
+          if(info.packXPallet > 0) totalPallets += cantidad / info.packXPallet;
+          totalKg += cantidad * info.pesoXPack;
+        }
+      });
+
+      return {
+        totalPallets: totalPallets.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+        totalProductos: pedido.items.length,
+        totalKg: Math.round(totalKg)
+      };
+    }
+
+    // Arma la tabla del modal "Resumen del pedido" (Código | Descripción | Total Cajas)
+    function renderCarrito(){
+      const contenido = document.getElementById('carrito-contenido');
+      const conCantidad = productos.filter(tieneCantidad);
+
+      if(conCantidad.length === 0){
+        contenido.innerHTML = '<div class="carrito-vacio">Todavía no cargaste productos para este pedido.</div>';
+        return;
+      }
+
+      let totalCantidad = 0;
+      const filas = conCantidad.map(row => {
+        const cantidad = cantidadDe(row);
+        totalCantidad += parseFloat(cantidad) || 0;
+        return `<tr><td>${row.codigo}</td><td style="text-align:left">${row.descripcion || ''}</td><td class="num">${cantidad}</td></tr>`;
+      }).join('');
+
+      contenido.innerHTML = `
+        <table class="sheet-table">
+          <thead><tr><th>Código</th><th>Material</th><th>Total Cajas</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+        <div class="sheet-total-row">Total: ${conCantidad.length} producto(s) · ${totalCantidad} unidad(es)</div>
+      `;
+    }
+
+    const carritoOverlay = document.getElementById('carrito-overlay');
+    const iconCarrito = document.getElementById('icon-carrito');
+    const carritoCerrar = document.getElementById('carrito-cerrar');
+    const carritoImprimir = document.getElementById('carrito-imprimir');
+
+    iconCarrito.addEventListener('click', () => {
+      renderCarrito();
+      carritoOverlay.classList.remove('hidden');
+    });
+    carritoCerrar.addEventListener('click', () => carritoOverlay.classList.add('hidden'));
+    carritoOverlay.addEventListener('click', (e) => {
+      if(e.target === carritoOverlay) carritoOverlay.classList.add('hidden');
+    });
+    carritoImprimir.addEventListener('click', () => {
+      document.body.classList.add('printing-carrito');
+      window.print();
+    });
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('printing-carrito');
+      quitarAjusteImpresionUnaHoja();
+    });
+
+    // Calcula un tamaño de letra/espaciado que haga entrar la tabla completa en una sola hoja A4,
+    // según la cantidad de productos que tenga el pedido (a más productos, letra más chica)
+    function ajustarImpresionUnaHoja(cantidadItems){
+      const disponibleMM = 230; // alto aproximado que queda libre después del encabezado "Detalle de Carga"
+      const filas = Math.max(1, cantidadItems) + 1; // + la fila de encabezado de la tabla
+      let altoFilaMM = disponibleMM / filas;
+      altoFilaMM = Math.max(3.2, Math.min(9, altoFilaMM)); // ni gigante con pocos ítems, ni ilegible con muchos
+
+      const fontSizePt = Math.max(6, Math.min(11, altoFilaMM * 1.15)).toFixed(1);
+      const paddingVerticalMM = Math.max(0.3, Math.min(2, altoFilaMM * 0.18)).toFixed(2);
+
+      let styleTag = document.getElementById('print-autofit-style');
+      if(!styleTag){
+        styleTag = document.createElement('style');
+        styleTag.id = 'print-autofit-style';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = `
+        @media print{
+          .sheet-table th, .sheet-table td{
+            font-size:${fontSizePt}pt !important;
+            padding:${paddingVerticalMM}mm 1mm !important;
+            line-height:1.1 !important;
+          }
+          .carga-header{ margin-bottom:3mm !important; padding-bottom:3mm !important; }
+          .carga-datos{ font-size:11px !important; line-height:1.3 !important; }
+        }
+      `;
+    }
+
+    function quitarAjusteImpresionUnaHoja(){
+      const styleTag = document.getElementById('print-autofit-style');
+      if(styleTag) styleTag.remove();
+    }
+
+    // Rellena el dibujo del camión según el % de ocupación (cargado/máximo), avisando si se pasó del 100%
+    function actualizarCamion(prefijo, cargado, maximo, textoDetalle){
+      const pct = maximo > 0 ? (cargado / maximo) * 100 : 0;
+      const pctVisual = Math.min(100, Math.max(0, pct));
+      const seExcedio = pct > 100;
+
+      const fillEl = document.getElementById(`fill-${prefijo}`);
+      const pctEl = document.getElementById(`pct-${prefijo}`);
+      const detalleEl = document.getElementById(`detalle-${prefijo}`);
+
+      if(fillEl){
+        fillEl.setAttribute('width', (238 * pctVisual / 100).toFixed(1));
+        fillEl.setAttribute('fill', seExcedio ? '#c00016' : '#2f9e44');
+      }
+      if(pctEl){
+        pctEl.textContent = Math.round(pct) + '%';
+        pctEl.classList.toggle('over-limit', seExcedio);
+      }
+      if(detalleEl){
+        detalleEl.textContent = textoDetalle + (seExcedio ? ' ⚠ excedido' : '');
+      }
+    }
+
+    function qtyStepperHTML(field, value){
+      return `<div class="qty-stepper">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" data-field="${field}" value="${value || ''}">
+          <div class="qty-arrows">
+            <button type="button" class="qty-up" title="Sumar" tabindex="-1">▲</button>
+            <button type="button" class="qty-down" title="Restar" tabindex="-1">▼</button>
+          </div>
+        </div>`;
+    }
+
+    function wireSteppers(container){
+      container.querySelectorAll('tr[data-row]').forEach(tr => {
+        const idx = parseInt(tr.dataset.row, 10);
+        tr.querySelectorAll('.qty-stepper').forEach(stepper => {
+          const input = stepper.querySelector('input');
+          const field = input.dataset.field;
+
+          const aplicarCambio = (nuevoValor) => {
+            input.value = nuevoValor;
+            productos[idx][field] = nuevoValor;
+
+            if(field === 'pallet' || field === 'filas' || field === 'pack'){
+              recalcularCantidad(productos[idx]);
+              const cantidadCelda = tr.querySelector('.cantidad-box');
+              if(cantidadCelda) cantidadCelda.textContent = productos[idx].cantidad || '';
+              actualizarResumenPedido();
+            }
+            saveProductos();
+          };
+
+          input.addEventListener('input', () => aplicarCambio(input.value));
+
+          stepper.querySelector('.qty-up').addEventListener('click', () => {
+            const val = parseInt(input.value, 10);
+            aplicarCambio(((isNaN(val) ? 0 : val) + 1).toString());
+          });
+          stepper.querySelector('.qty-down').addEventListener('click', () => {
+            const val = parseInt(input.value, 10);
+            aplicarCambio(Math.max(0, (isNaN(val) ? 0 : val) - 1).toString());
+          });
+        });
+      });
+    }
+
+    // ---- Render de la tabla única de Pedidos ----
+    const pedidosMostrarSelect = document.getElementById('pedidos-mostrar');
+
+    // Genera las opciones de "Mostrar" (10, 30, 50, 100, 150, 200, 250...) según cuántos códigos haya
+    function actualizarOpcionesMostrar(){
+      const total = productos.length;
+      const opciones = [10, 30, 50, 100, 150];
+      let v = 200;
+      while(v - 50 < total){
+        opciones.push(v);
+        v += 50;
+      }
+
+      const valorActual = pedidosMostrarSelect.value; // puede ser 'todos' o un número
+
+      let html = `<option value="todos">Todos (${total})</option>`;
+      html += opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+      pedidosMostrarSelect.innerHTML = html;
+
+      // Si ya había una selección válida (el usuario la eligió), la respeta.
+      // Si no, por defecto muestra "Todos".
+      const opcionesValidas = ['todos', ...opciones.map(String)];
+      pedidosMostrarSelect.value = opcionesValidas.includes(valorActual) ? valorActual : 'todos';
+    }
+
+    // Busca un código en Stock Cliente y avisa si su cantidad está en 0
+    function stockEnCero(codigo){
+      if(!stock || stock.length === 0) return false;
+      const cod = (codigo || '').toString().trim();
+      const fila = stock.find(s => (s.codigo || '').toString().trim() === cod);
+      if(!fila) return false;
+      const cant = parseFloat(fila.cantidad);
+      return !isNaN(cant) && cant === 0;
+    }
+
+    function renderTable(){
+      pedidosCount.textContent = productos.length;
+      actualizarOpcionesMostrar();
+      actualizarResumenPedido();
+
+      if(productos.length === 0){
+        tableArea.className = 'table-area';
+        tableArea.innerHTML = '<div class="no-items">No existen items</div>';
+        return;
+      }
+
+      const valorMostrar = pedidosMostrarSelect.value;
+      const limite = valorMostrar === 'todos' ? productos.length : (parseInt(valorMostrar, 10) || productos.length);
+      const visibles = productos.slice(0, limite);
+
+      let html = `<table class="prod-table"><thead><tr>
+          <th>Código</th><th>Descripción</th><th>Pallets:</th><th>Pisos</th><th>Cajas:</th><th>Total Cajas</th><th></th>
+        </tr></thead><tbody>`;
+
+      visibles.forEach((row, i) => {
+        const claseAlerta = stockEnCero(row.codigo) ? ' class="row-stock-cero"' : '';
+        html += `<tr data-row="${i}"${claseAlerta}>
+            <td>${row.codigo}</td>
+            <td>${row.descripcion}</td>
+            <td class="qty-col">${qtyStepperHTML('pallet', row.pallet)}</td>
+            <td class="qty-col">${qtyStepperHTML('filas', row.filas)}</td>
+            <td class="qty-col">${qtyStepperHTML('pack', row.pack)}</td>
+            <td class="qty-col cantidad-readonly"><div class="cantidad-box" id="cantidad-display-${i}">${row.cantidad || ''}</div></td>
+            <td><button class="remove-row" title="Quitar">✖</button></td>
+          </tr>`;
+      });
+      html += `</tbody></table>`;
+
+      tableArea.className = '';
+      tableArea.innerHTML = html;
+      wireSteppers(tableArea);
+
+      tableArea.querySelectorAll('.remove-row').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.closest('tr').dataset.row, 10);
+          productos.splice(idx, 1);
+          saveProductos();
+          renderTable();
+        });
+      });
+    }
+
+    // Carga lo guardado en el navegador al abrir la página
+    // (loadDatos y loadStock primero: renderTable de Pedidos los usa para Cantidad/Pallets y el marcado en amarillo)
+    loadDatos();
+    loadStock();
+    loadProductos();
+    renderTable();
+    pedidosMostrarSelect.addEventListener('change', renderTable);
+
+    // ---- Agregar código nuevo manualmente ----
+    const manualCodigoInput = document.getElementById('manual-codigo');
+    const manualDescripcionInput = document.getElementById('manual-descripcion');
+    const btnAgregarManual = document.getElementById('btn-agregar-manual');
+
+    function agregarManual(){
+      const codigo = manualCodigoInput.value.trim();
+      const descripcion = manualDescripcionInput.value.trim();
+
+      if(!codigo){
+        importStatus.textContent = 'Ingresá un código para agregar el producto.';
+        return;
+      }
+
+      const added = mergeProductos([{ codigo, descripcion }]);
+      renderTable();
+
+      if(added === 0){
+        importStatus.textContent = `El código ${normalizarCodigo6(codigo)} ya estaba cargado.`;
+      }else{
+        importStatus.textContent = `Agregado: ${normalizarCodigo6(codigo)} — ${descripcion || '(sin descripción)'}.`;
+      }
+
+      manualCodigoInput.value = '';
+      manualDescripcionInput.value = '';
+      manualCodigoInput.focus();
+    }
+
+    btnAgregarManual.addEventListener('click', agregarManual);
+    [manualCodigoInput, manualDescripcionInput].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') agregarManual();
+      });
+    });
+
+    // ---- Historial: cada "Guardar" crea un pedido (carpeta) separado por fecha ----
+    const STORAGE_KEY_HISTORIAL = 'stockdfr_historial_pedidos';
+    const STORAGE_KEY_EMAIL = 'stockdfr_email_destino';
+    const STORAGE_KEY_CARGA_CFG = 'stockdfr_carga_config';
+    const historialTableArea = document.getElementById('historial-table-area');
+    const historialCount = document.getElementById('historial-count');
+    const historialTitle = document.getElementById('historial-title');
+    const btnGuardarPedido = document.getElementById('btn-guardar-pedido');
+    const btnImprimirHistorial = document.getElementById('btn-imprimir-historial');
+    const btnVolverHistorial = document.getElementById('btn-volver-historial');
+    const btnEditarHistorial = document.getElementById('btn-editar-historial');
+    const btnMailHistorial = document.getElementById('btn-mail-historial');
+    const btnDescargarHistorial = document.getElementById('btn-descargar-historial');
+    const emailDestinoInput = document.getElementById('email-destino');
+    const formsubmitForm = document.getElementById('formsubmit-form');
+    const formsubmitSubject = document.getElementById('formsubmit-subject');
+    const formsubmitMessage = document.getElementById('formsubmit-message');
+    const formsubmitFile = document.getElementById('formsubmit-file');
+    const cargaRazonSocialInput = document.getElementById('carga-razon-social');
+    const cargaContactoInput = document.getElementById('carga-contacto');
+    const cargaLocalidadInput = document.getElementById('carga-localidad');
+    const cargaTelefonoInput = document.getElementById('carga-telefono');
+    const cargaNumeroInput = document.getElementById('carga-numero');
+
+    let historial = [];          // lista de pedidos guardados (carpetas)
+    let historialAbierto = null; // id del pedido abierto, o null si estamos en la lista
+    let historialEditando = false;  // true = el pedido abierto se está editando
+    let edicionItems = null;        // copia de trabajo de los items mientras se edita (no toca el historial hasta Guardar)
+
+    function loadEmailDestino(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY_EMAIL);
+        if(raw) emailDestinoInput.value = raw;
+      }catch(err){ /* nada que hacer */ }
+    }
+    emailDestinoInput.addEventListener('input', () => {
+      try{
+        localStorage.setItem(STORAGE_KEY_EMAIL, emailDestinoInput.value.trim());
+      }catch(err){ /* nada que hacer */ }
+    });
+
+    // Datos del encabezado "Detalle de Carga" + número correlativo, guardados en el navegador
+    function loadCargaConfig(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY_CARGA_CFG);
+        const cfg = raw ? JSON.parse(raw) : {};
+        cargaRazonSocialInput.value = cfg.razonSocial || '';
+        cargaContactoInput.value = cfg.contacto || '';
+        cargaLocalidadInput.value = cfg.localidad || '';
+        cargaTelefonoInput.value = cfg.telefono || '';
+        cargaNumeroInput.value = cfg.numero || '500000001';
+      }catch(err){
+        cargaNumeroInput.value = '500000001';
+      }
+    }
+
+    function saveCargaConfig(){
+      try{
+        localStorage.setItem(STORAGE_KEY_CARGA_CFG, JSON.stringify({
+          razonSocial: cargaRazonSocialInput.value.trim(),
+          contacto: cargaContactoInput.value.trim(),
+          localidad: cargaLocalidadInput.value.trim(),
+          telefono: cargaTelefonoInput.value.trim(),
+          numero: cargaNumeroInput.value.trim()
+        }));
+      }catch(err){ /* nada que hacer */ }
+    }
+    [cargaRazonSocialInput, cargaContactoInput, cargaLocalidadInput, cargaTelefonoInput, cargaNumeroInput].forEach(input => {
+      input.addEventListener('input', saveCargaConfig);
+    });
+
+    // El número de carga es siempre el mismo (fijo), no se incrementa entre pedidos
+    function tomarProximoNumeroCarga(){
+      return (cargaNumeroInput.value || '500000001').trim();
+    }
+
+    function loadHistorial(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY_HISTORIAL);
+        historial = raw ? JSON.parse(raw) : [];
+      }catch(err){
+        historial = [];
+      }
+    }
+
+    function saveHistorial(){
+      try{
+        localStorage.setItem(STORAGE_KEY_HISTORIAL, JSON.stringify(historial));
+      }catch(err){
+        console.error('No se pudo guardar el historial:', err);
+      }
+    }
+
+    function tieneCantidad(row){
+      return ['pallet', 'filas', 'pack', 'cantidad'].some(f => {
+        const v = parseFloat(row[f]);
+        return !isNaN(v) && v > 0;
+      });
+    }
+
+    // Cantidad a mostrar en Historial: usa el campo Cantidad, y si no tiene valor cae a Pack, Filas o Pallet
+    function cantidadDe(row){
+      const cantidad = parseFloat(row.cantidad);
+      if(!isNaN(cantidad) && cantidad > 0) return row.cantidad;
+      const pack = parseFloat(row.pack);
+      if(!isNaN(pack) && pack > 0) return row.pack;
+      const filas = parseFloat(row.filas);
+      if(!isNaN(filas) && filas > 0) return row.filas;
+      return row.pallet;
+    }
+
+    // Arma el texto de un pedido para el cuerpo del mail (Código | Descripción | Cantidad)
+    function textoPedido(pedido){
+      let texto = `Pedido — ${pedido.fecha}\n\n`;
+      pedido.items.forEach(row => {
+        texto += `${row.codigo} | ${row.descripcion} | ${row.cantidad}\n`;
+      });
+      const total = pedido.items.reduce((acc, r) => acc + (parseFloat(r.cantidad) || 0), 0);
+      texto += `\nTotal: ${pedido.items.length} producto(s) · ${total} unidad(es)\n`;
+      return texto;
+    }
+
+    // ---- Formato "Detalle de Carga" para el Excel exportado ----
+    // Reproduce el mismo encabezado visual que usa la planilla de stock de la empresa:
+    // N° de carga resaltado en amarillo + "DETALLE DE CARGA" en negrita arriba a la derecha,
+    // debajo los datos del cliente, y la tabla de productos con encabezado rojo y texto blanco.
+    const COCA_ROJO = 'FFE30016';
+    const AMARILLO = 'FFFFFF00';
+    const BORDE_GRIS = { style: 'thin', color: { argb: 'FFB9B9B9' } };
+    const BORDE_CELDA = { top: BORDE_GRIS, left: BORDE_GRIS, bottom: BORDE_GRIS, right: BORDE_GRIS };
+
+    // Nombre de hoja válido para Excel: sin \ / ? * [ ] : y máximo 31 caracteres
+    function nombreHojaSeguro(texto){
+      const limpio = (texto || 'Pedido').toString().replace(/[\\/?*[\]:]/g, '-');
+      return limpio.slice(0, 31) || 'Pedido';
+    }
+
+    // Dibuja el encabezado "Detalle de Carga" (N°, razón social, contacto, etc.) en una hoja,
+    // devolviendo la fila donde debe arrancar la tabla de productos
+    function dibujarEncabezadoCarga(sheet, pedido){
+      if(!pedido.numeroCarga){
+        // Pedidos viejos guardados antes de tener número de carga: solo un título simple
+        const celdaTitulo = sheet.getCell(1, 1);
+        celdaTitulo.value = `Pedido — ${pedido.fecha}`;
+        celdaTitulo.font = { bold: true, size: 14 };
+        return 3;
+      }
+
+      // Fila 1: N° de carga (resaltado en amarillo) y título, cada uno en su propia celda
+      const celdaNumero = sheet.getCell(1, 1);
+      celdaNumero.value = `N° ${pedido.numeroCarga}`;
+      celdaNumero.font = { bold: true, size: 14 };
+      celdaNumero.alignment = { vertical: 'middle' };
+      celdaNumero.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AMARILLO } };
+
+      const celdaTitulo = sheet.getCell(1, 3);
+      celdaTitulo.value = 'DETALLE DE CARGA';
+      celdaTitulo.font = { bold: true, size: 14 };
+      celdaTitulo.alignment = { vertical: 'middle', horizontal: 'right' };
+
+      sheet.getRow(1).height = 22;
+
+      // Fila 2 en adelante: razón social (negrita) + datos de contacto, uno por línea
+      const lineas = [pedido.razonSocial || ''];
+      if(pedido.contacto) lineas.push(`Contacto: ${pedido.contacto}`);
+      if(pedido.localidad) lineas.push(`Localidad: ${pedido.localidad}`);
+      if(pedido.telefono) lineas.push(`Teléfono: ${pedido.telefono}`);
+      lineas.push(`FECHA Emisión: ${pedido.fechaEmision || pedido.fecha}`);
+
+      lineas.forEach((texto, idx) => {
+        const celda = sheet.getCell(idx + 2, 1); // arranca en la fila 2, justo debajo del N°/Título
+        celda.value = texto;
+        if(idx === 0) celda.font = { bold: true, size: 12 }; // razón social en negrita
+      });
+
+      return 2 + lineas.length + 1; // +1 = renglón en blanco antes de la tabla
+    }
+
+    // Dibuja la tabla de productos (encabezado rojo + filas + total) a partir de la fila indicada
+    function dibujarTablaProductos(sheet, pedido, filaInicio){
+      ['Código', 'Descripción', 'Cantidad'].forEach((texto, i) => {
+        const celda = sheet.getCell(filaInicio, i + 1);
+        celda.value = texto;
+        celda.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COCA_ROJO } };
+        celda.alignment = { vertical: 'middle', horizontal: i === 2 ? 'center' : 'left' };
+        celda.border = BORDE_CELDA;
+      });
+
+      let fila = filaInicio + 1;
+      let totalCantidad = 0;
+      pedido.items.forEach(row => {
+        const cantidadNum = parseFloat(row.cantidad) || 0;
+        totalCantidad += cantidadNum;
+
+        sheet.getCell(fila, 1).value = row.codigo;
+        sheet.getCell(fila, 2).value = row.descripcion;
+        sheet.getCell(fila, 3).value = cantidadNum || row.cantidad || '';
+        [1, 2, 3].forEach(col => { sheet.getCell(fila, col).border = BORDE_CELDA; });
+        sheet.getCell(fila, 3).alignment = { horizontal: 'center' };
+        fila++;
+      });
+
+      sheet.mergeCells(fila, 1, fila, 3);
+      const celdaTotal = sheet.getCell(fila, 1);
+      celdaTotal.value = `Total: ${pedido.items.length} producto(s) · ${totalCantidad} unidad(es)`;
+      celdaTotal.font = { bold: true, size: 11 };
+      celdaTotal.alignment = { horizontal: 'center' };
+      fila++;
+
+      const totales = calcularTotalesPedido(pedido);
+      sheet.mergeCells(fila, 1, fila, 3);
+      const celdaResumen = sheet.getCell(fila, 1);
+      celdaResumen.value = `Pallets: ${totales.totalPallets}   |   Productos: ${totales.totalProductos}   |   Total Kg: ${totales.totalKg.toLocaleString('es-AR')}`;
+      celdaResumen.font = { bold: true, size: 11 };
+      celdaResumen.alignment = { horizontal: 'center' };
+
+      sheet.getColumn(1).width = 14;
+      sheet.getColumn(2).width = 45;
+      sheet.getColumn(3).width = 14;
+    }
+
+    // Arma un .xlsx real con el formato "Detalle de Carga" (uno o varios pedidos, una hoja por pedido)
+    // y lo devuelve como Blob. ExcelJS es necesario porque es la única de las dos librerías cargadas
+    // que puede ESCRIBIR colores y negrita en el archivo (la otra, SheetJS, solo puede leerlos).
+    async function generarExcelPedidoBlob(pedidosAEnviar){
+      const wb = new ExcelJS.Workbook();
+      const nombresUsados = new Set();
+
+      pedidosAEnviar.forEach((pedido, i) => {
+        let nombre = nombreHojaSeguro(pedido.numeroCarga ? `Carga ${pedido.numeroCarga}` : pedido.fecha);
+        if(nombresUsados.has(nombre)) nombre = nombreHojaSeguro(`${nombre} (${i + 1})`);
+        nombresUsados.add(nombre);
+
+        const sheet = wb.addWorksheet(nombre);
+        const filaTabla = dibujarEncabezadoCarga(sheet, pedido);
+        dibujarTablaProductos(sheet, pedido, filaTabla);
+      });
+
+      const arrayBuffer = await wb.xlsx.writeBuffer();
+      return new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+
+    // Envía el/los pedido(s) por mail con el Excel adjunto de verdad, usando FormSubmit.co (gratis, sin cuenta)
+    async function enviarPorMail(pedidosAEnviar){
+      const email = emailDestinoInput.value.trim();
+      if(!email){
+        alert('Cargá primero un email destino arriba, en "Email para enviar pedidos".');
+        emailDestinoInput.focus();
+        return;
+      }
+      if(pedidosAEnviar.length === 0){
+        alert('Tildá al menos un pedido de la lista para enviar.');
+        return;
+      }
+
+      if(typeof DataTransfer === 'undefined'){
+        alert('Tu navegador no admite adjuntar archivos automáticamente. Actualizalo o usá Chrome.');
+        return;
+      }
+
+      const asunto = pedidosAEnviar.length === 1
+        ? `Pedido — ${pedidosAEnviar[0].fecha}`
+        : `Pedidos (${pedidosAEnviar.length}) — Mi Coca-Cola Clientes`;
+
+      const nombreArchivo = (pedidosAEnviar.length === 1
+        ? `pedido_${pedidosAEnviar[0].fecha}`
+        : `pedidos_${pedidosAEnviar.length}`
+      ).replace(/[\/\\:]/g, '-') + '.xlsx';
+
+      let blob;
+      try{
+        blob = await generarExcelPedidoBlob(pedidosAEnviar);
+      }catch(err){
+        console.error(err);
+        alert('No se pudo armar el archivo Excel del pedido.');
+        return;
+      }
+
+      // Carga el archivo generado en el input file oculto del formulario
+      const archivo = new File([blob], nombreArchivo, { type: blob.type });
+      const dt = new DataTransfer();
+      dt.items.add(archivo);
+      formsubmitFile.files = dt.files;
+
+      formsubmitSubject.value = asunto;
+      formsubmitMessage.value = pedidosAEnviar.map(textoPedido).join('\n----------------------------\n\n');
+      formsubmitForm.action = `https://formsubmit.co/${encodeURIComponent(email)}`;
+
+      formsubmitForm.submit();
+
+      alert(`Pedido enviado a ${email} con el Excel adjunto.\n\nSi es la primera vez que le mandás a este email, FormSubmit te va a pedir confirmar con un link antes de entregarlo — después de esa única confirmación, los próximos llegan directo.`);
+    }
+
+    function productosParaBuscar(){
+      // Catálogo para buscar al agregar un producto nuevo a un pedido ya guardado
+      return productos.filter(p => p.codigo);
+    }
+
+    function renderHistorial(){
+      // ---- Vista detalle: un pedido puntual, imprimible ----
+      if(historialAbierto){
+        const pedido = historial.find(p => p.id === historialAbierto);
+        if(!pedido){
+          historialAbierto = null;
+          historialEditando = false;
+          return renderHistorial();
+        }
+
+        historialTitle.textContent = `Pedido — ${pedido.fecha}`;
+        btnVolverHistorial.classList.remove('hidden');
+        btnEditarHistorial.classList.remove('hidden');
+        btnEditarHistorial.textContent = historialEditando ? '✎ Editando…' : '✎ Editar';
+
+        if(historialEditando){
+          // En modo edición se ocultan Imprimir/Mail/Descargar hasta guardar o cancelar
+          btnImprimirHistorial.classList.add('hidden');
+          btnMailHistorial.classList.add('hidden');
+          btnDescargarHistorial.classList.add('hidden');
+        }else{
+          btnImprimirHistorial.classList.remove('hidden');
+          btnMailHistorial.classList.remove('hidden');
+          btnDescargarHistorial.classList.remove('hidden');
+        }
+
+        const itemsActuales = historialEditando ? edicionItems : pedido.items;
+        historialCount.textContent = itemsActuales.length;
+
+        // Encabezado "Detalle de Carga": si el pedido es viejo y no tiene estos datos guardados, no se muestra
+        let html = '';
+        if(pedido.numeroCarga){
+          html += `<div class="carga-header">
+              <div>
+                <div class="carga-badge">${pedido.numeroCarga}</div>
+              </div>
+              <div class="carga-titulo">DETALLE DE CARGA</div>
+            </div>
+            <div class="carga-datos">
+              <div class="razon-social">${pedido.razonSocial || ''}</div>
+              ${pedido.contacto ? `<div>Contacto: ${pedido.contacto}</div>` : ''}
+              ${pedido.localidad ? `<div>Localidad: ${pedido.localidad}</div>` : ''}
+              ${pedido.telefono ? `<div>Teléfono: ${pedido.telefono}</div>` : ''}
+              <div>FECHA Emisión: ${pedido.fechaEmision || pedido.fecha}</div>
+            </div>
+            <br>`;
+        }
+
+        html += `<table class="sheet-table"><thead><tr>
+            <th>Código</th><th>Descripción</th><th>Cantidad</th>${historialEditando ? '<th class="edit-col"></th>' : ''}
+          </tr></thead><tbody>`;
+
+        let totalCantidad = 0;
+        itemsActuales.forEach((row, i) => {
+          totalCantidad += parseFloat(row.cantidad) || 0;
+          if(historialEditando){
+            html += `<tr data-edit-row="${i}">
+                <td>${row.codigo}</td>
+                <td>${row.descripcion}</td>
+                <td class="num"><input type="number" min="0" class="edit-cantidad" data-idx="${i}" value="${row.cantidad}"></td>
+                <td class="edit-col"><button class="edit-delete" data-idx="${i}" title="Quitar producto">✖</button></td>
+              </tr>`;
+          }else{
+            html += `<tr>
+                <td>${row.codigo}</td>
+                <td>${row.descripcion}</td>
+                <td class="num">${row.cantidad}</td>
+              </tr>`;
+          }
+        });
+        html += `</tbody></table>`;
+        html += `<div class="sheet-total-row">Total: ${itemsActuales.length} producto(s) · ${totalCantidad} unidad(es)</div>`;
+
+        if(historialEditando){
+          html += `<div class="agregar-producto-row">
+              <div class="agregar-producto-sugerencias">
+                <input type="text" id="editar-buscar-producto" placeholder="Buscar producto por código o nombre para agregar...">
+                <div class="agregar-producto-lista hidden" id="editar-sugerencias-lista"></div>
+              </div>
+              <input type="number" min="1" id="editar-cantidad-nueva" placeholder="Cantidad" value="1">
+              <button class="action-btn" id="editar-agregar-producto-btn">+ Agregar</button>
+            </div>
+            <div class="edit-actions-row">
+              <button class="action-btn" id="editar-cancelar-btn">Cancelar</button>
+              <button class="action-btn" id="editar-guardar-btn">✔ Guardar cambios</button>
+            </div>`;
+        }else{
+          const totales = calcularTotalesPedido(pedido);
+          html += `<div class="summary-row">Pallets: ${totales.totalPallets} &nbsp;|&nbsp; Productos: ${totales.totalProductos} &nbsp;|&nbsp; Total Kg: ${totales.totalKg.toLocaleString('es-AR')}</div>`;
+        }
+
+        historialTableArea.className = '';
+        historialTableArea.innerHTML = html;
+
+        if(historialEditando){
+          wireEdicionPedido(pedido);
+        }
+        return;
+      }
+
+      // ---- Vista lista: todas las carpetas (pedidos guardados) ----
+      historialTitle.textContent = 'Historial';
+      btnVolverHistorial.classList.add('hidden');
+      btnEditarHistorial.classList.add('hidden');
+      btnImprimirHistorial.classList.add('hidden');
+      historialCount.textContent = historial.length;
+
+      if(historial.length === 0){
+        btnMailHistorial.classList.add('hidden');
+        btnDescargarHistorial.classList.add('hidden');
+        historialTableArea.className = 'table-area';
+        historialTableArea.innerHTML = '<div class="no-items">No existen items</div>';
+        return;
+      }
+
+      btnMailHistorial.classList.remove('hidden');
+      btnDescargarHistorial.classList.remove('hidden');
+
+      let html = '<div class="folder-list">';
+      historial.forEach(pedido => {
+        html += `<div class="folder-row" data-id="${pedido.id}">
+            <input type="checkbox" class="folder-check" data-id="${pedido.id}" title="Tildar para enviar por mail">
+            <span class="folder-icon">📁</span>
+            <span class="folder-name">Pedido — ${pedido.fecha}</span>
+            <span class="folder-meta">${pedido.items.length} producto(s)</span>
+            <button class="folder-delete" data-id="${pedido.id}" title="Eliminar">✖</button>
+          </div>`;
+      });
+      html += '</div>';
+
+      historialTableArea.className = '';
+      historialTableArea.innerHTML = html;
+
+      historialTableArea.querySelectorAll('.folder-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if(e.target.closest('.folder-delete') || e.target.closest('.folder-check')) return;
+          historialAbierto = row.dataset.id;
+          renderHistorial();
+        });
+      });
+
+      historialTableArea.querySelectorAll('.folder-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          historial = historial.filter(p => p.id !== btn.dataset.id);
+          saveHistorial();
+          renderHistorial();
+        });
+      });
+
+      historialTableArea.querySelectorAll('.folder-check').forEach(chk => {
+        chk.addEventListener('click', (e) => e.stopPropagation());
+      });
+    }
+
+    // Conecta los controles del modo edición dentro de un pedido del historial:
+    // cambiar cantidades, borrar productos, buscar y agregar uno nuevo, guardar o cancelar.
+    let productoSeleccionadoEdicion = null;
+
+    function actualizarTotalEdicion(){
+      const totalCantidad = edicionItems.reduce((acc, r) => acc + (parseFloat(r.cantidad) || 0), 0);
+      const totalRow = historialTableArea.querySelector('.sheet-total-row');
+      if(totalRow) totalRow.textContent = `Total: ${edicionItems.length} producto(s) · ${totalCantidad} unidad(es)`;
+      historialCount.textContent = edicionItems.length;
+    }
+
+    function wireEdicionPedido(pedido){
+      productoSeleccionadoEdicion = null;
+
+      // Cambiar cantidad de un producto ya cargado
+      historialTableArea.querySelectorAll('.edit-cantidad').forEach(input => {
+        input.addEventListener('input', () => {
+          const idx = parseInt(input.dataset.idx, 10);
+          edicionItems[idx].cantidad = input.value;
+          actualizarTotalEdicion();
+        });
+      });
+
+      // Quitar un producto del pedido
+      historialTableArea.querySelectorAll('.edit-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          edicionItems.splice(idx, 1);
+          renderHistorial();
+        });
+      });
+
+      // Buscador para agregar un producto nuevo al pedido
+      const buscarInput = document.getElementById('editar-buscar-producto');
+      const listaSugerencias = document.getElementById('editar-sugerencias-lista');
+      const cantidadNuevaInput = document.getElementById('editar-cantidad-nueva');
+      const agregarBtn = document.getElementById('editar-agregar-producto-btn');
+
+      if(buscarInput){
+        buscarInput.addEventListener('input', () => {
+          productoSeleccionadoEdicion = null;
+          const termino = buscarInput.value.trim().toLowerCase();
+          if(!termino){
+            listaSugerencias.classList.add('hidden');
+            listaSugerencias.innerHTML = '';
+            return;
+          }
+          const coincidencias = productosParaBuscar().filter(p =>
+            p.codigo.toLowerCase().includes(termino) || (p.descripcion || '').toLowerCase().includes(termino)
+          ).slice(0, 20);
+
+          if(coincidencias.length === 0){
+            listaSugerencias.innerHTML = '<div style="color:#888;cursor:default;">Sin resultados</div>';
+          }else{
+            listaSugerencias.innerHTML = coincidencias.map(p =>
+              `<div data-codigo="${p.codigo}" data-descripcion="${(p.descripcion || '').replace(/"/g, '&quot;')}">${p.codigo} — ${p.descripcion || ''}</div>`
+            ).join('');
+          }
+          listaSugerencias.classList.remove('hidden');
+        });
+
+        listaSugerencias.addEventListener('click', (e) => {
+          const item = e.target.closest('[data-codigo]');
+          if(!item) return;
+          productoSeleccionadoEdicion = { codigo: item.dataset.codigo, descripcion: item.dataset.descripcion };
+          buscarInput.value = `${item.dataset.codigo} — ${item.dataset.descripcion}`;
+          listaSugerencias.classList.add('hidden');
+          listaSugerencias.innerHTML = '';
+        });
+
+        document.addEventListener('click', (e) => {
+          if(!e.target.closest('.agregar-producto-sugerencias')){
+            listaSugerencias.classList.add('hidden');
+          }
+        });
+      }
+
+      if(agregarBtn){
+        agregarBtn.addEventListener('click', () => {
+          if(!productoSeleccionadoEdicion){
+            alert('Elegí un producto de la lista de sugerencias antes de agregarlo.');
+            return;
+          }
+          const cantidad = cantidadNuevaInput.value;
+          if(!cantidad || parseFloat(cantidad) <= 0){
+            alert('Ingresá una cantidad válida.');
+            return;
+          }
+          const yaExiste = edicionItems.findIndex(r => normCodigo(r.codigo) === normCodigo(productoSeleccionadoEdicion.codigo));
+          if(yaExiste !== -1){
+            edicionItems[yaExiste].cantidad = (parseFloat(edicionItems[yaExiste].cantidad) || 0) + parseFloat(cantidad);
+          }else{
+            edicionItems.push({
+              codigo: productoSeleccionadoEdicion.codigo,
+              descripcion: productoSeleccionadoEdicion.descripcion,
+              cantidad: cantidad
+            });
+          }
+          productoSeleccionadoEdicion = null;
+          renderHistorial();
+        });
+      }
+
+      // Cancelar: descarta los cambios de esta sesión de edición
+      const cancelarBtn = document.getElementById('editar-cancelar-btn');
+      if(cancelarBtn){
+        cancelarBtn.addEventListener('click', () => {
+          historialEditando = false;
+          edicionItems = null;
+          renderHistorial();
+        });
+      }
+
+      // Guardar: aplica los cambios al mismo pedido guardado (no crea uno nuevo)
+      const guardarBtn = document.getElementById('editar-guardar-btn');
+      if(guardarBtn){
+        guardarBtn.addEventListener('click', () => {
+          pedido.items = edicionItems
+            .filter(r => (parseFloat(r.cantidad) || 0) > 0)
+            .map(r => ({ codigo: r.codigo, descripcion: r.descripcion, cantidad: r.cantidad }));
+          saveHistorial();
+          historialEditando = false;
+          edicionItems = null;
+          renderHistorial();
+        });
+      }
+    }
+
+    btnMailHistorial.addEventListener('click', () => {
+      if(historialAbierto){
+        const pedido = historial.find(p => p.id === historialAbierto);
+        if(pedido) enviarPorMail([pedido]);
+        return;
+      }
+      const seleccionados = Array.from(historialTableArea.querySelectorAll('.folder-check:checked'))
+        .map(chk => historial.find(p => p.id === chk.dataset.id))
+        .filter(Boolean);
+      enviarPorMail(seleccionados);
+    });
+
+    // Descarga directa del/los pedido(s) en el mismo formato "Detalle de Carga", sin pasar por mail
+    btnDescargarHistorial.addEventListener('click', async () => {
+      let pedidosADescargar;
+      if(historialAbierto){
+        const pedido = historial.find(p => p.id === historialAbierto);
+        if(!pedido) return;
+        pedidosADescargar = [pedido];
+      } else {
+        pedidosADescargar = Array.from(historialTableArea.querySelectorAll('.folder-check:checked'))
+          .map(chk => historial.find(p => p.id === chk.dataset.id))
+          .filter(Boolean);
+        if(pedidosADescargar.length === 0){
+          alert('Tildá al menos un pedido de la lista para descargar.');
+          return;
+        }
+      }
+
+      const nombreArchivo = (pedidosADescargar.length === 1
+        ? `carga_${pedidosADescargar[0].numeroCarga || pedidosADescargar[0].fecha}`
+        : `cargas_${pedidosADescargar.length}`
+      ).replace(/[\/\\:]/g, '-') + '.xlsx';
+
+      try{
+        const blob = await generarExcelPedidoBlob(pedidosADescargar);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }catch(err){
+        console.error(err);
+        alert('No se pudo armar el archivo Excel del pedido.');
+      }
+    });
+
+    btnGuardarPedido.addEventListener('click', () => {
+      const conCantidad = productos.filter(tieneCantidad);
+
+      if(conCantidad.length === 0){
+        importStatus.textContent = 'No hay productos con Pallet, Filas o Pack cargados para guardar.';
+        return;
+      }
+
+      const ahora = new Date();
+      const fecha = ahora.toLocaleString('es-AR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      // Fecha larga en español para el encabezado, ej: "viernes, 21 de agosto de 2026"
+      let fechaEmision = ahora.toLocaleDateString('es-AR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      fechaEmision = fechaEmision.charAt(0).toLowerCase() + fechaEmision.slice(1);
+
+      // El número de carga y los datos del cliente quedan fijos en el pedido tal como estaban al guardar
+      historial.unshift({
+        id: Date.now().toString(),
+        fecha,
+        numeroCarga: tomarProximoNumeroCarga(),
+        fechaEmision,
+        razonSocial: cargaRazonSocialInput.value.trim(),
+        contacto: cargaContactoInput.value.trim(),
+        localidad: cargaLocalidadInput.value.trim(),
+        telefono: cargaTelefonoInput.value.trim(),
+        items: conCantidad.map(row => ({
+          codigo: row.codigo,
+          descripcion: row.descripcion,
+          cantidad: cantidadDe(row)
+        }))
+      });
+      saveHistorial();
+      historialAbierto = null;
+      renderHistorial();
+
+      // Limpia Pallet/Filas/Pack/Cantidad de todos los productos para poder armar un pedido nuevo
+      productos.forEach(row => {
+        row.pallet = '';
+        row.filas = '';
+        row.pack = '';
+        row.cantidad = '';
+      });
+      saveProductos();
+      renderTable();
+
+      importStatus.textContent = `Guardado en Historial (${fecha}): ${conCantidad.length} producto(s) con cantidad. Casilleros limpiados para el próximo pedido.`;
+    });
+
+    btnImprimirHistorial.addEventListener('click', () => {
+      const pedido = historial.find(p => p.id === historialAbierto);
+      ajustarImpresionUnaHoja(pedido ? pedido.items.length : 0);
+      window.print();
+    });
+
+    btnVolverHistorial.addEventListener('click', () => {
+      historialAbierto = null;
+      historialEditando = false;
+      edicionItems = null;
+      renderHistorial();
+    });
+
+    btnEditarHistorial.addEventListener('click', () => {
+      if(historialEditando) return; // ya está editando; se sale con Guardar o Cancelar
+      const pedido = historial.find(p => p.id === historialAbierto);
+      if(!pedido) return;
+      edicionItems = pedido.items.map(row => ({ codigo: row.codigo, descripcion: row.descripcion, cantidad: row.cantidad }));
+      historialEditando = true;
+      renderHistorial();
+    });
+
+    loadEmailDestino();
+    loadCargaConfig();
+    loadHistorial();
+    renderHistorial();
+
+    // ---- Stock Cliente: solo muestra lo que se importó por Excel ----
+    const stockInput = document.getElementById('stock-input');
+    const stockTableArea = document.getElementById('stock-table-area');
+    const stockImportStatus = document.getElementById('stock-import-status');
+
+    function saveStock(){
+      try{
+        localStorage.setItem(STORAGE_KEY_STOCK, JSON.stringify(stock));
+      }catch(err){
+        console.error('No se pudo guardar el stock:', err);
+      }
+    }
+
+    // Busca la hoja con encabezados de Código/Descripción y devuelve dónde arrancan los datos
+
+    function renderStock(){
+      if(stock.length === 0){
+        stockTableArea.className = 'table-area';
+        stockTableArea.innerHTML = '<div class="no-items">No existen items</div>';
+        return;
+      }
+
+      let html = `<table class="sheet-table"><thead><tr>
+          <th>Código</th><th>Descripción</th><th>Cantidad</th>
+        </tr></thead><tbody>`;
+
+      stock.forEach(row => {
+        html += `<tr>
+            <td>${row.codigo}</td>
+            <td>${row.descripcion}</td>
+            <td class="num">${row.cantidad || ''}</td>
+          </tr>`;
+      });
+      html += `</tbody></table>`;
+
+      stockTableArea.className = '';
+      stockTableArea.innerHTML = html;
+    }
+
+    // Busca la columna "STOCK DISTRIBUIDORES" por su nombre en la fila de encabezado
+    function findStockDistribuidoresIdx(headerRow){
+      if(!headerRow) return -1;
+      return headerRow.findIndex(h =>
+        (h || '').toString().trim().toLowerCase() === 'stock distribuidores'
+      );
+    }
+
+    stockInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try{
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const { name: sheetName, rows, headerRowIdx } = findCodeSheet(workbook);
+
+          const dataStart = headerRowIdx !== -1 ? headerRowIdx + 1 : 1;
+          const headerRow = headerRowIdx !== -1 ? rows[headerRowIdx] : null;
+
+          // 1º intenta encontrar la columna por el nombre "Stock Distribuidores"
+          // 2º si no la encuentra (o cambió de lugar), cae a la columna D fija
+          let qtyIdx = findStockDistribuidoresIdx(headerRow);
+          if(qtyIdx === -1) qtyIdx = 3;
+
+          // Código = columna A · Descripción = columna B · Cantidad = la que se detectó arriba
+          const dataRows = rows.slice(dataStart)
+            .filter(r => nvl(r[0], '').toString().trim() !== '')
+            .map(r => ({
+              codigo: nvl(r[0], '').toString().trim(),
+              descripcion: nvl(r[1], '').toString().trim(),
+              cantidad: nvl(r[qtyIdx], '').toString().trim()
+            }));
+
+          if(dataRows.length === 0){
+            stockImportStatus.textContent = 'No se encontraron productos en el archivo.';
+            return;
+          }
+
+          dataRows.sort((a, b) => (parseFloat(a.codigo) || 0) - (parseFloat(b.codigo) || 0));
+
+          // Cada importación reemplaza el stock anterior por completo
+          stock = dataRows;
+          saveStock();
+          renderStock();
+          renderTable(); // refresca el marcado en amarillo de Pedidos con el stock nuevo
+          stockImportStatus.textContent = `"${file.name}" (hoja "${sheetName}"): ${stock.length} producto(s) importado(s).`;
+        }catch(err){
+          stockImportStatus.textContent = 'No se pudo leer el archivo. Verificá que sea un Excel válido.';
+          console.error(err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('btn-limpiar-stock').addEventListener('click', () => {
+      if(stock.length === 0){
+        stockImportStatus.textContent = 'La hoja de Stock ya está vacía.';
+        return;
+      }
+      if(!confirm('¿Borrar todo el Stock Cliente cargado? Esta acción no se puede deshacer.')){
+        return;
+      }
+      stock = [];
+      saveStock();
+      renderStock();
+      renderTable(); // saca el marcado en amarillo de Pedidos ya que no hay stock cargado
+      stockImportStatus.textContent = 'Hoja de Stock limpiada.';
+    });
+
+    loadStock();
+    renderStock();
+
+    // ---- Datos: importa un xlsm crudo, solo columnas A-D y F-R ----
+    const datosInput = document.getElementById('datos-input');
+    const datosTableArea = document.getElementById('datos-table-area');
+    const datosImportStatus = document.getElementById('datos-import-status');
+
+    // Índices (0 = columna A) a conservar: A,B,C,D, F..R (se salta la E = índice 4)
+    const DATOS_COLUMNAS = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+
+    function saveDatos(){
+      try{
+        localStorage.setItem(STORAGE_KEY_DATOS, JSON.stringify(datos));
+      }catch(err){
+        console.error('No se pudo guardar Datos:', err);
+      }
+    }
+
+    function renderDatos(){
+      if(datos.rows.length === 0){
+        datosTableArea.innerHTML = '<div class="no-items">No existen items</div>';
+        return;
+      }
+
+      let html = '<table class="datos-table"><thead><tr>';
+      datos.headers.forEach(h => { html += `<th>${h || ''}</th>`; });
+      html += '</tr></thead><tbody>';
+
+      datos.rows.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => { html += `<td>${nvl(cell, '')}</td>`; });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+
+      datosTableArea.innerHTML = html;
+    }
+
+    datosInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try{
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          // Siempre apunta a la hoja "M M" (si no existe, usa la primera como respaldo)
+          const sheetName = findSheet(workbook);
+          const sheet = workbook.Sheets[sheetName];
+          const allRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+          if(allRows.length === 0){
+            datosImportStatus.textContent = 'El archivo está vacío.';
+            return;
+          }
+
+          // Encuentra la fila real de encabezados (en "M M" está más abajo, no en la fila 1)
+          const headerRowIdx = findHeaderRow(allRows);
+          const filaHeader = headerRowIdx !== -1 ? headerRowIdx : 0;
+          const dataStart = filaHeader + 1;
+
+          // Toma solo las columnas A-D y F-R, tal cual están en el archivo
+          const filtrar = row => DATOS_COLUMNAS.map(i => nvl(row[i], ''));
+
+          const headerRow = filtrar(allRows[filaHeader]);
+          const dataRows = allRows.slice(dataStart)
+            .filter(r => r.some(c => c !== ''))
+            .map(filtrar);
+
+          datos = { headers: headerRow, rows: dataRows };
+          saveDatos();
+          renderDatos();
+          datosImportStatus.textContent = `"${file.name}" (hoja "${sheetName}"): ${dataRows.length} fila(s) importada(s).`;
+        }catch(err){
+          datosImportStatus.textContent = 'No se pudo leer el archivo. Verificá que sea un .xlsm/.xlsx válido.';
+          console.error(err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('btn-limpiar-datos').addEventListener('click', () => {
+      if(datos.rows.length === 0){
+        datosImportStatus.textContent = 'La hoja de Datos ya está vacía.';
+        return;
+      }
+      if(!confirm('¿Borrar todos los Datos importados? Esta acción no se puede deshacer.')){
+        return;
+      }
+      datos = { headers: [], rows: [] };
+      saveDatos();
+      renderDatos();
+      datosImportStatus.textContent = 'Hoja de Datos limpiada.';
+    });
+
+    loadDatos();
+    renderDatos();
+
+    const tabs = document.querySelectorAll('.tab');
+    const panels = {
+      historial: document.getElementById('tab-historial'),
+      pedidos: document.getElementById('tab-pedidos'),
+      stock: document.getElementById('tab-stock'),
+      datos: document.getElementById('tab-datos'),
+    };
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        Object.values(panels).forEach(p => p.classList.add('hidden'));
+        panels[tab.dataset.tab].classList.remove('hidden');
+      });
+    });
+  </script>
+
+  <script>
+    // Registro del Service Worker para que la app funcione como PWA (instalable/offline)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(() => console.log('Service worker registrado.'))
+          .catch((err) => console.error('No se pudo registrar el service worker:', err));
+      });
+    }
+  </script>
+
+</body>
+</html>
